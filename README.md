@@ -22,9 +22,9 @@ Before running the server, ensure you have the following:
   ```
 - Using another terminal compile `Client.java` file
   ```bash
-  javac Clinet.java
+  javac Client.java
   ```
 - Run Client (Using several terminals you can up several clients with this command)
   ```bash
-  java Clinet 127.0.0.1 5000
+  java Client 127.0.0.1 5000
   ```
