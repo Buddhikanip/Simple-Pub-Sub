@@ -68,14 +68,15 @@ public class Server implements Runnable {
         private PrintWriter out;
         private int id;
         private String role;
+        private String topic;
 
         public ConnectionHandler(Socket client) {
             this.client = client;
         }
 
-        public void broadcast(String message) {
+        public void broadcast(String message, String topic) {
             for (ConnectionHandler ch : subscribers) {
-                if (ch != null) {
+                if (ch != null && ch.topic.equals(topic)) {
                     ch.sendMessage(message);
                 }
             }
@@ -87,15 +88,16 @@ public class Server implements Runnable {
                 out = new PrintWriter(client.getOutputStream(), true);
                 in = new BufferedReader(new InputStreamReader(client.getInputStream()));
                 role = in.readLine();
+                topic = in.readLine();
 
                 if ("PUBLISHER".equals(role)) {
                     publishers.add(this);
                     id = publishers.size();
-                    System.out.println("PUBLISHER-" + id + ": connected!");
+                    System.out.println("PUBLISHER-" + this.topic + "-" + this.id + ": connected!");
                 } else if ("SUBSCRIBER".equals(role)) {
                     subscribers.add(this);
                     id = subscribers.size();
-                    System.out.println("SUBSCRIBER-" + id + ": connected!");
+                    System.out.println("SUBSCRIBER-" + this.topic + "-" + this.id + ": connected!");
                 } else {
                     out.println("Invalid role! Disconnecting...");
                     this.shutdown();
@@ -109,7 +111,7 @@ public class Server implements Runnable {
                         System.out.println(this.role + "-" + this.id + ": left!");
                         this.shutdown();
                     } else if ("PUBLISHER".equals(role)) {
-                        broadcast("PUBLISHER-" + this.id + ": " + message);
+                        broadcast("PUBLISHER-" + this.topic + "-" + this.id + ": " + message, this.topic);
                     } else {
                         out.println("You are not authorized to publish messages!");
                     }
