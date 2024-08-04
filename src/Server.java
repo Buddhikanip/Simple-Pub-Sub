@@ -102,6 +102,7 @@ public class Server implements Runnable {
                         this.shutdown();
                     } else {
                         broadcast(nickname + ": " + message);
+                        System.out.println(nickname + ":" + message);
                     }
                 }
             } catch (IOException e) {
