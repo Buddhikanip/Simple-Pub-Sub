@@ -9,14 +9,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Server implements Runnable {
-    private ArrayList<ConnectionHandler> connections;
+    private ArrayList<ConnectionHandler> publishers;
+    private ArrayList<ConnectionHandler> subscribers;
     private ServerSocket server;
     private boolean done;
     private ExecutorService pool;
     private int port;
 
     public Server(String port) {
-        connections = new ArrayList<>();
+        publishers = new ArrayList<>();
+        subscribers = new ArrayList<>();
         done = false;
         this.port = Integer.parseInt(port);
     }
@@ -30,7 +32,6 @@ public class Server implements Runnable {
             while (!done) {
                 Socket client = server.accept();
                 ConnectionHandler handler = new ConnectionHandler(client);
-                connections.add(handler);
                 pool.execute(handler);
             }
         } catch (Exception e) {
@@ -45,7 +46,12 @@ public class Server implements Runnable {
             if (!server.isClosed()) {
                 server.close();
             }
-            for (ConnectionHandler ch : connections) {
+            for (ConnectionHandler ch : publishers) {
+                if (ch != null) {
+                    ch.shutdown();
+                }
+            }
+            for (ConnectionHandler ch : subscribers) {
                 if (ch != null) {
                     ch.shutdown();
                 }
@@ -60,15 +66,17 @@ public class Server implements Runnable {
         private Socket client;
         private BufferedReader in;
         private PrintWriter out;
-        private String nickname;
+        private int id;
+        private String role;
+        private String topic;
 
         public ConnectionHandler(Socket client) {
             this.client = client;
         }
 
-        public void broadcast(String message) {
-            for (ConnectionHandler ch : connections) {
-                if (ch != null) {
+        public void broadcast(String message, String topic) {
+            for (ConnectionHandler ch : subscribers) {
+                if (ch != null && ch.topic.equals(topic)) {
                     ch.sendMessage(message);
                 }
             }
@@ -79,29 +87,33 @@ public class Server implements Runnable {
             try {
                 out = new PrintWriter(client.getOutputStream(), true);
                 in = new BufferedReader(new InputStreamReader(client.getInputStream()));
-                out.println("Please Enter a Nickname: ");
-                nickname = in.readLine();
-                System.out.println(nickname + " connected!");
-                broadcast(nickname + " joined the chat!");
+                role = in.readLine();
+                topic = in.readLine();
+
+                if ("PUBLISHER".equals(role)) {
+                    publishers.add(this);
+                    id = publishers.size();
+                    System.out.println("PUBLISHER-" + this.topic + "-" + this.id + ": connected!");
+                } else if ("SUBSCRIBER".equals(role)) {
+                    subscribers.add(this);
+                    id = subscribers.size();
+                    System.out.println("SUBSCRIBER-" + this.topic + "-" + this.id + ": connected!");
+                } else {
+                    out.println("Invalid role! Disconnecting...");
+                    this.shutdown();
+                    return;
+                }
+
 
                 String message;
                 while ((message = in.readLine()) != null) {
-                    if (message.startsWith("/nick ")) {
-                        String[] messageSplit = message.split(" ", 2);
-                        if (messageSplit.length == 2) {
-                            broadcast(nickname + " renamed themselves to " + messageSplit[1]);
-                            System.out.println(nickname + " renamed themselves to " + messageSplit[1]);
-                            nickname = messageSplit[1];
-                            out.println("Successfully changed nickname to " + nickname);
-                        } else {
-                            out.println("No nickname provided!");
-                        }
-                    } else if (message.equals("/terminate")) {
-                        broadcast(nickname + " left the chat!");
-                        System.out.println(nickname + " left the chat!");
+                    if (message.equals("terminate")) {
+                        System.out.println(this.role + "-" + this.id + ": left!");
                         this.shutdown();
+                    } else if ("PUBLISHER".equals(role)) {
+                        broadcast("PUBLISHER-" + this.topic + "-" + this.id + ": " + message, this.topic);
                     } else {
-                        broadcast(nickname + ": " + message);
+                        out.println("You are not authorized to publish messages!");
                     }
                 }
             } catch (IOException e) {
@@ -122,6 +134,12 @@ public class Server implements Runnable {
                 }
             } catch (IOException e) {
                 // ignore
+            } finally {
+                if ("PUBLISHER".equals(role)) {
+                    publishers.remove(this);
+                } else if ("SUBSCRIBER".equals(role)) {
+                    subscribers.remove(this);
+                }
             }
         }
     }

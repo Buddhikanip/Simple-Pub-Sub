@@ -11,11 +11,15 @@ public class Client implements Runnable {
     private boolean done;
     private String ip;
     private int port;
+    private String role;
+    private String topic;
 
-    public Client(String ip, String port) {
+    public Client(String ip, String port, String role, String topic) {
         done = false;
         this.ip = ip;
         this.port = Integer.parseInt(port);
+        this.role = role.toUpperCase();
+        this.topic = topic.toUpperCase();
     }
 
     @Override
@@ -57,9 +61,11 @@ public class Client implements Runnable {
         public void run() {
             try {
                 BufferedReader inReader = new BufferedReader(new InputStreamReader(System.in));
+                out.println(role);
+                out.println(topic);
                 while (!done) {
                     String message = inReader.readLine();
-                    if (message.equals("/terminate")) {
+                    if (message.equals("terminate")) {
                         out.println(message);
                         inReader.close();
                         shutdown();
@@ -74,7 +80,7 @@ public class Client implements Runnable {
     }
 
     public static void main(String[] args) {
-        Client client = new Client(args[0], args[1]);
+        Client client = new Client(args[0], args[1], args[2], args[3]);
         client.run();
     }
 }
