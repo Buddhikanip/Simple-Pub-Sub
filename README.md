@@ -9,28 +9,29 @@ Before running the server, ensure you have the following:
 ## How to run
 - You have to clone this project
 - Goto `src` folder location
-  ```bash
+  ```shell
   cd ./Simple-Pub-Sub/src
   ```
 - You have to compile `Server.java` file
-  ```bash
+  ```shell
   javac Server.java
   ```
 - Run Server
-  ```bash
+  ```shell
   java Server 5000
   ```
 - Using another terminal compile `Client.java` file
-  ```bash
+  ```shell
   javac Client.java
   ```
+  
 - Run Client (Using several terminals you can up several clients with topics below commands)
   * Run `PUBLISHER`
-    ```bash
+    ```shell
     java Client 127.0.0.1 5000 PUBLISHER TOPIC
     ```
   * Run `SUBSCRIBER`
-    ```bash
+    ```shell
     java Client 127.0.0.1 5000 SUBSCRIBER TOPIC
     ```
     ***Messages from publishers are sent to subscribers who are listening to the publisher's topic.***
